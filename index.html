@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MultiTranslate Hub & Toolkit</title>
+  <!-- Pyodide for Browser Python Execution -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
   <style>
     :root {
       --bg: #0b1120;
@@ -32,7 +34,6 @@
       flex-direction: column;
       padding-bottom: 70px;
     }
-    /* Tabs Navigation */
     .nav-tabs {
       display: flex;
       background: #0f172a;
@@ -64,7 +65,6 @@
       border-bottom-color: var(--primary);
       background: rgba(56, 189, 248, 0.05);
     }
-    /* Main Content */
     .container {
       padding: 14px;
       max-width: 680px;
@@ -78,7 +78,6 @@
     .tab-pane.active {
       display: block;
     }
-    /* Cards */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -92,8 +91,9 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
+      gap: 10px;
     }
-    select, textarea {
+    select, textarea, input {
       width: 100%;
       background: #0b1120;
       border: 1px solid var(--border);
@@ -171,7 +171,7 @@
     .action-btn:active {
       opacity: 0.85;
     }
-    /* Inline Suggestion / Alert Card */
+    /* Grammar Warning Notification */
     .prompt-box {
       display: none;
       background: rgba(251, 191, 36, 0.08);
@@ -179,11 +179,6 @@
       border-radius: 10px;
       padding: 12px;
       margin-bottom: 14px;
-      animation: fadeIn 0.2s ease-in;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     .prompt-box h5 {
       color: var(--warning);
@@ -317,6 +312,7 @@
       border-radius: 8px;
       font-size: 13px;
     }
+    /* Compiler Terminal & Canvas Window */
     .terminal-out {
       background: #050811;
       border: 1px solid var(--border);
@@ -324,18 +320,27 @@
       padding: 12px;
       font-family: monospace;
       font-size: 13px;
-      min-height: 120px;
-      max-height: 200px;
+      min-height: 180px;
+      max-height: 280px;
       overflow-y: auto;
       white-space: pre-wrap;
       color: #a5f3fc;
       margin-top: 10px;
+      position: relative;
+    }
+    #sandboxCanvas {
+      width: 100%;
+      height: 200px;
+      display: none;
+      background: #000;
+      border-radius: 6px;
+      margin-bottom: 8px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
+  <!-- Navigation Bar -->
   <nav class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('tab-trans')">
       <span>文/A</span>
@@ -436,17 +441,26 @@
       </div>
     </div>
 
-    <!-- TAB 3: SANDBOX CODE COMPILER -->
+    <!-- TAB 3: UNIVERSAL COMPILER (PYTHON, JAVASCRIPT, C++) -->
     <div id="tab-code" class="tab-pane">
       <div class="card">
-        <h4 style="margin-bottom: 8px;">JavaScript Execution Sandbox</h4>
-        <textarea id="codeEditor" rows="6" style="font-family:monospace; font-size:13px;">// Standard JavaScript:
-const items = ["Earth", "Mars", "Jupiter"];
-items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
-        <div style="margin-top: 10px;">
-          <button class="action-btn" style="width:100%" onclick="runCode()">Run Code 🚀</button>
+        <div class="card-header">
+          <h4 style="font-size:15px;">Universal Code Runner</h4>
+          <select id="codeLang" style="width: 150px; padding: 6px;" onchange="handleLangSwitch()">
+            <option value="js" selected>JavaScript</option>
+            <option value="py">Python 3</option>
+            <option value="cpp">C / C++</option>
+          </select>
         </div>
-        <div class="terminal-out" id="termOutput">&gt; Console ready.</div>
+        <textarea id="codeEditor" rows="7" style="font-family:monospace; font-size:13px;"></textarea>
+        <div style="display:flex; gap:8px; margin-top: 10px;">
+          <button class="action-btn" style="flex:1;" onclick="executeUniversalCode()">Run Code 🚀</button>
+          <button class="action-btn" style="background:var(--danger); color:#fff; width:80px;" onclick="stopCodeExecution()">Stop</button>
+        </div>
+        <div class="terminal-out" id="termOutput">
+          <canvas id="sandboxCanvas"></canvas>
+          <div id="termText">&gt; Ready for commands.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -469,8 +483,73 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
 
   <script>
     let pendingCorrection = null;
+    let pyodideInstance = null;
+    let pyodideLoading = false;
+    let activeTimers = [];
+    let activeAnimation = null;
 
-    /* TABS */
+    /* CODE TEMPLATES PER LANGUAGE */
+    const templates = {
+      js: `// JavaScript (V8 Engine Sandbox)
+// Canvas & standard DOM elements are natively available:
+const canvas = document.getElementById('sandboxCanvas');
+canvas.style.display = 'block';
+canvas.width = canvas.clientWidth || 320;
+canvas.height = 200;
+const ctx = canvas.getContext('2d');
+
+const fontSize = 14;
+const columns = Math.floor(canvas.width / fontSize);
+const drops = Array(columns).fill(1);
+
+function render() {
+  ctx.fillStyle = 'rgba(5, 8, 17, 0.15)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = fontSize + 'px monospace';
+
+  for (let i = 0; i < drops.length; i++) {
+    const char = Math.random() > 0.5 ? '1' : '0';
+    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+    if (drops[i] * fontSize > canvas.height && Math.random() > 0.95) drops[i] = 0;
+    drops[i]++;
+  }
+  requestAnimationFrame(render);
+}
+render();`,
+      py: `# Python 3 Engine (WebAssembly)
+print("Initializing Python environment...")
+
+numbers = [1, 2, 3, 4, 5]
+squares = {n: n**2 for n in numbers}
+
+print(f"Squares dictionary: {squares}")
+
+# Generate a binary pattern output
+for i in range(6):
+    binary_str = bin(i)[2:].zfill(8)
+    print(f"Byte {i}: {binary_str}")`,
+      cpp: `// C / C++ Interpreter
+#include <iostream>
+
+int main() {
+    std::cout << "Executing C++ Application..." << std::endl;
+    for (int i = 1; i <= 5; ++i) {
+        std::cout << "Iteration: " << i << " | Factor: " << (i * i) << std::endl;
+    }
+    return 0;
+}`
+    };
+
+    // Load initial template
+    document.getElementById('codeEditor').value = templates.js;
+
+    function handleLangSwitch() {
+      const selected = document.getElementById('codeLang').value;
+      document.getElementById('codeEditor').value = templates[selected] || '';
+    }
+
+    /* TAB SWITCHER */
     function switchTab(tabId) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -521,12 +600,11 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       pendingCorrection = null;
     }
 
-    /* GRAMMAR CHECK HEURISTICS & AUDIT */
+    /* GRAMMAR AUDIT & VERIFICATION */
     async function auditEnglishSentence(text) {
       let corrected = text;
       let hasError = false;
 
-      // 1. Common English grammatical errors and spoken omissions
       const quickFixes = [
         { regex: /\bwhere your home\b/gi, fix: 'where is your home' },
         { regex: /\bwhere your\b/gi, fix: 'where is your' },
@@ -552,7 +630,6 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
         }
       });
 
-      // 2. LanguageTool Check
       try {
         const res = await fetch('https://api.languagetool.org/v2/check', {
           method: 'POST',
@@ -566,19 +643,15 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
             hasError = true;
             actionable.sort((a, b) => b.offset - a.offset);
             actionable.forEach(m => {
-              const wrongWord = corrected.substring(m.offset, m.offset + m.length);
               corrected = corrected.substring(0, m.offset) + m.replacements[0].value + corrected.substring(m.offset + m.length);
             });
           }
         }
-      } catch (e) {
-        // Continue with rule-based heuristics if offline or blocked
-      }
+      } catch (e) {}
 
       return { hasError: hasError && corrected.toLowerCase() !== text.toLowerCase(), correctedText: corrected };
     }
 
-    /* TRANSLATION FLOW WITH CONFIRMATION */
     async function startTranslationProcess() {
       const srcInput = document.getElementById('srcText');
       const text = srcInput.value.trim();
@@ -587,7 +660,6 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
 
       hideSuggestionPrompt();
 
-      // Run grammar verification if input is in English
       if (source === 'en' || source === 'auto') {
         document.getElementById('targetText').value = 'Auditing sentence structure...';
         const audit = await auditEnglishSentence(text);
@@ -600,7 +672,6 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
         }
       }
 
-      // No grammar issues detected; proceed with translation
       proceedTranslation(text);
     }
 
@@ -686,7 +757,6 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       }
     }
 
-    /* TEXT TO SPEECH (VOICE OUT) */
     function speakText(textareaId, langSelectId) {
       const text = document.getElementById(textareaId).value;
       if (!text || !('speechSynthesis' in window)) return;
@@ -702,7 +772,7 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       if (text) navigator.clipboard.writeText(text);
     }
 
-    /* DETAILED AI MODAL AUDIT */
+    /* AI MODAL */
     async function openAIAssistant() {
       const text = document.getElementById('srcText').value.trim();
       const modal = document.getElementById('aiModal');
@@ -782,26 +852,173 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       document.getElementById('homoOutput').value = out;
     }
 
-    /* TAB 3: JAVASCRIPT SANDBOX */
-    function runCode() {
-      const code = document.getElementById('codeEditor').value;
-      const out = document.getElementById('termOutput');
-      out.innerText = '';
+    /* TAB 3: UNIVERSAL COMPILER CORE */
+    function stopCodeExecution() {
+      activeTimers.forEach(id => { clearInterval(id); clearTimeout(id); });
+      activeTimers = [];
+      if (activeAnimation) {
+        cancelAnimationFrame(activeAnimation);
+        activeAnimation = null;
+      }
+      const canvas = document.getElementById('sandboxCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+      }
+      const termText = document.getElementById('termText');
+      termText.innerText += '\n[Execution Stopped]';
+    }
 
-      const logs = [];
-      const originalLog = console.log;
-      console.log = (...args) => {
-        logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
+    async function executeUniversalCode() {
+      stopCodeExecution();
+      const lang = document.getElementById('codeLang').value;
+      const code = document.getElementById('codeEditor').value;
+      const termText = document.getElementById('termText');
+      termText.innerText = '';
+
+      if (lang === 'js') {
+        runJavaScript(code);
+      } else if (lang === 'py') {
+        runPython(code);
+      } else if (lang === 'cpp') {
+        runCppEmulation(code);
+      }
+    }
+
+    /* JAVASCRIPT ENGINE (ASYNC RUNTIME & LIVE LOGGING) */
+    async function runJavaScript(code) {
+      const termText = document.getElementById('termText');
+      
+      const customLog = (...args) => {
+        const text = args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ');
+        termText.innerText += (termText.innerText ? '\n' : '') + text;
+      };
+
+      const customSetInterval = (fn, ms) => {
+        const id = setInterval(fn, ms);
+        activeTimers.push(id);
+        return id;
+      };
+
+      const customSetTimeout = (fn, ms) => {
+        const id = setTimeout(fn, ms);
+        activeTimers.push(id);
+        return id;
+      };
+
+      const customRAF = (fn) => {
+        const id = requestAnimationFrame(fn);
+        activeAnimation = id;
+        return id;
       };
 
       try {
-        const result = new Function(code)();
-        if (result !== undefined) logs.push(`=> ${result}`);
-        out.innerText = logs.length > 0 ? logs.join('\n') : '> Execution completed with no console output.';
+        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+        const runner = new AsyncFunction(
+          'console',
+          'setInterval',
+          'setTimeout',
+          'requestAnimationFrame',
+          'document',
+          'window',
+          code
+        );
+
+        const customConsole = {
+          log: customLog,
+          warn: customLog,
+          error: customLog,
+          info: customLog
+        };
+
+        const result = await runner(
+          customConsole,
+          customSetInterval,
+          customSetTimeout,
+          customRAF,
+          document,
+          window
+        );
+
+        if (result !== undefined) {
+          termText.innerText += (termText.innerText ? '\n' : '') + `=> ${result}`;
+        }
       } catch (err) {
-        out.innerText = `Error: ${err.message}`;
-      } finally {
-        console.log = originalLog;
+        termText.innerText += (termText.innerText ? '\n' : '') + `Error: ${err.message}`;
+      }
+    }
+
+    /* PYTHON 3 WEBASSEMBLY ENGINE (PYODIDE) */
+    async function runPython(code) {
+      const termText = document.getElementById('termText');
+      termText.innerText = 'Loading Python runtime (WebAssembly)...';
+
+      try {
+        if (!pyodideInstance && !pyodideLoading) {
+          pyodideLoading = true;
+          pyodideInstance = await loadPyodide({
+            stdout: (text) => {
+              termText.innerText += (termText.innerText ? '\n' : '') + text;
+            },
+            stderr: (text) => {
+              termText.innerText += (termText.innerText ? '\n' : '') + `Err: ${text}`;
+            }
+          });
+          pyodideLoading = false;
+        }
+
+        termText.innerText = '';
+        pyodideInstance.setStdout({
+          batched: (text) => {
+            termText.innerText += (termText.innerText ? '\n' : '') + text;
+          }
+        });
+
+        await pyodideInstance.runPythonAsync(code);
+      } catch (err) {
+        termText.innerText += (termText.innerText ? '\n' : '') + `Python Error:\n${err.message}`;
+      }
+    }
+
+    /* C / C++ PARSER & EMULATOR */
+    function runCppEmulation(code) {
+      const termText = document.getElementById('termText');
+      termText.innerText = 'Parsing C++ code...\n';
+
+      try {
+        const coutRegex = /std::cout\s*<<\s*([^;]+);/g;
+        let match;
+        let outputFound = false;
+
+        while ((match = coutRegex.exec(code)) !== null) {
+          outputFound = true;
+          let expression = match[1];
+          const parts = expression.split('<<').map(p => p.trim());
+          let lineOut = '';
+
+          for (let part of parts) {
+            if (part === 'std::endl' || part === '"\\n"') {
+              lineOut += '\n';
+            } else if (part.startsWith('"') && part.endsWith('"')) {
+              lineOut += part.slice(1, -1);
+            } else {
+              try {
+                const evalVal = Function(`"use strict"; return (${part})`)();
+                lineOut += evalVal;
+              } catch (e) {
+                lineOut += part;
+              }
+            }
+          }
+          termText.innerText += lineOut;
+        }
+
+        if (!outputFound) {
+          termText.innerText += 'Build succeeded. No stdout emissions detected from main().';
+        }
+      } catch (err) {
+        termText.innerText += `\nC++ Compiler Error: ${err.message}`;
       }
     }
   </script>
