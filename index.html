@@ -15,6 +15,7 @@
       --text-muted: #94a3b8;
       --success: #34d399;
       --danger: #f87171;
+      --warning: #fbbf24;
     }
     * {
       box-sizing: border-box;
@@ -92,7 +93,7 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    select, input, textarea {
+    select, textarea {
       width: 100%;
       background: #0b1120;
       border: 1px solid var(--border);
@@ -161,7 +162,6 @@
       padding: 10px 16px;
       font-size: 14px;
       cursor: pointer;
-      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -170,6 +170,68 @@
     }
     .action-btn:active {
       opacity: 0.85;
+    }
+    /* Inline Suggestion / Alert Card */
+    .prompt-box {
+      display: none;
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      animation: fadeIn 0.2s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .prompt-box h5 {
+      color: var(--warning);
+      font-size: 13px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prompt-box p {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .suggested-preview {
+      font-weight: 700;
+      color: var(--success);
+      background: rgba(52, 211, 153, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 2px 0;
+    }
+    .prompt-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .btn-suggest-accept {
+      background: var(--success);
+      color: #064e3b;
+      font-weight: 700;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn-suggest-ignore {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
     }
     /* Floating AI Button */
     .ai-fab {
@@ -190,7 +252,7 @@
       cursor: pointer;
       z-index: 500;
     }
-    /* AI Modal */
+    /* AI Modal Sheet */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -255,19 +317,6 @@
       border-radius: 8px;
       font-size: 13px;
     }
-    .fix-btn {
-      background: var(--success);
-      color: #064e3b;
-      font-weight: 700;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 13px;
-      margin-top: 6px;
-      width: 100%;
-    }
-    /* Terminal Output */
     .terminal-out {
       background: #050811;
       border: 1px solid var(--border);
@@ -286,7 +335,7 @@
 </head>
 <body>
 
-  <!-- Navigation Bar -->
+  <!-- Navigation -->
   <nav class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('tab-trans')">
       <span>文/A</span>
@@ -307,7 +356,7 @@
     <div id="tab-trans" class="tab-pane active">
       <div class="card">
         <div class="card-header">
-          <select id="srcLang" onchange="resetRecLang()">
+          <select id="srcLang" onchange="hideSuggestionPrompt()">
             <option value="auto">Auto-Detect</option>
             <option value="en" selected>English</option>
             <option value="hi">Hindi (हिंदी)</option>
@@ -319,7 +368,7 @@
             <option value="zh">Chinese</option>
           </select>
         </div>
-        <textarea id="srcText" placeholder="Enter text or speak..." oninput="updateWordCount()"></textarea>
+        <textarea id="srcText" placeholder="Enter text or speak..." oninput="handleInput()"></textarea>
         <div class="card-footer">
           <div class="icon-actions">
             <button class="icon-btn" id="micBtn" onclick="toggleSpeech()" title="Speech to text">🎤</button>
@@ -327,6 +376,17 @@
             <button class="icon-btn" onclick="clearInput()" title="Clear">🗑️</button>
           </div>
           <span id="charCount">0 characters | 0 words</span>
+        </div>
+      </div>
+
+      <!-- INLINE GRAMMAR AUDIT PROMPT -->
+      <div class="prompt-box" id="grammarPrompt">
+        <h5><span>⚠️</span> Grammatical Error Detected</h5>
+        <p>Your input appears to have a grammar or structural mistake.</p>
+        <p>Shall I replace it with: <span class="suggested-preview" id="suggestedPreviewText"></span>?</p>
+        <div class="prompt-actions">
+          <button class="btn-suggest-accept" onclick="acceptSuggestedCorrection()">Replace &amp; Translate</button>
+          <button class="btn-suggest-ignore" onclick="ignoreAndTranslateDirectly()">Translate As-Is</button>
         </div>
       </div>
 
@@ -355,7 +415,7 @@
             <button class="icon-btn" onclick="speakText('targetText', 'targetLang')" title="Listen output">🔊</button>
             <button class="icon-btn" onclick="copyResult()" title="Copy result">📋</button>
           </div>
-          <button class="action-btn" style="width: auto; padding: 6px 14px; font-size: 12px;" onclick="executeTranslation()">Translate</button>
+          <button class="action-btn" style="width: auto; padding: 6px 14px; font-size: 12px;" onclick="startTranslationProcess()">Translate</button>
         </div>
       </div>
     </div>
@@ -363,14 +423,14 @@
     <!-- TAB 2: HOMOGLYPHS & CIPHERS -->
     <div id="tab-homo" class="tab-pane">
       <div class="card">
-        <h4 style="margin-bottom: 8px;">Unicode Homoglyphs & Ciphers</h4>
+        <h4 style="margin-bottom: 8px;">Unicode Homoglyphs &amp; Ciphers</h4>
         <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Converts ASCII to lookalike characters or encodes cryptographic ciphers.</p>
         <textarea id="homoInput" placeholder="Enter text to mutate or cipher..."></textarea>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin: 10px 0;">
-          <button class="action-btn" onclick="convertHomoglyphs()">Homoglyph (Cyrillic)</button>
-          <button class="action-btn" onclick="runCipher('rot13')">ROT13 Cipher</button>
-          <button class="action-btn" onclick="runCipher('base64')">Base64 Encode</button>
-          <button class="action-btn" onclick="runCipher('binary')">Binary ASCII</button>
+          <button class="action-btn" style="width:100%" onclick="convertHomoglyphs()">Homoglyph (Cyrillic)</button>
+          <button class="action-btn" style="width:100%" onclick="runCipher('rot13')">ROT13 Cipher</button>
+          <button class="action-btn" style="width:100%" onclick="runCipher('base64')">Base64 Encode</button>
+          <button class="action-btn" style="width:100%" onclick="runCipher('binary')">Binary ASCII</button>
         </div>
         <textarea id="homoOutput" readonly placeholder="Output will appear here..."></textarea>
       </div>
@@ -380,11 +440,11 @@
     <div id="tab-code" class="tab-pane">
       <div class="card">
         <h4 style="margin-bottom: 8px;">JavaScript Execution Sandbox</h4>
-        <textarea id="codeEditor" rows="6" style="font-family:monospace; font-size:13px;">// Enter standard JavaScript:
+        <textarea id="codeEditor" rows="6" style="font-family:monospace; font-size:13px;">// Standard JavaScript:
 const items = ["Earth", "Mars", "Jupiter"];
 items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
         <div style="margin-top: 10px;">
-          <button class="action-btn" onclick="runCode()">Run Code 🚀</button>
+          <button class="action-btn" style="width:100%" onclick="runCode()">Run Code 🚀</button>
         </div>
         <div class="terminal-out" id="termOutput">&gt; Console ready.</div>
       </div>
@@ -392,13 +452,13 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
   </div>
 
   <!-- FLOATING AI AUDIT BUTTON -->
-  <button class="ai-fab" onclick="openAIAssistant()" title="Analyze Grammar & Edit">✦</button>
+  <button class="ai-fab" onclick="openAIAssistant()" title="Analyze Grammar &amp; Edit">✦</button>
 
   <!-- AI MODAL SHEET -->
   <div class="modal-overlay" id="aiModal" onclick="closeAIAssistant(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3><span>✦</span> Grammar Audit & AI Assistant</h3>
+        <h3><span>✦</span> Linguistic Audit &amp; AI Assistant</h3>
         <button class="icon-btn" onclick="forceCloseModal()" style="font-size: 16px;">✕</button>
       </div>
       <div class="modal-body" id="aiModalBody">
@@ -408,7 +468,9 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
   </div>
 
   <script>
-    /* TAB SWITCHER */
+    let pendingCorrection = null;
+
+    /* TABS */
     function switchTab(tabId) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -418,7 +480,11 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       if (tabId === 'tab-code') document.querySelectorAll('.tab-btn')[2].classList.add('active');
     }
 
-    /* WORD COUNT & STATS */
+    function handleInput() {
+      updateWordCount();
+      hideSuggestionPrompt();
+    }
+
     function updateWordCount() {
       const text = document.getElementById('srcText').value;
       const chars = text.length;
@@ -429,6 +495,7 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
     function clearInput() {
       document.getElementById('srcText').value = '';
       document.getElementById('targetText').value = '';
+      hideSuggestionPrompt();
       updateWordCount();
     }
 
@@ -445,16 +512,117 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       const tempVal = srcText.value;
       srcText.value = targetText.value;
       targetText.value = tempVal;
+      hideSuggestionPrompt();
       updateWordCount();
     }
 
-    /* TRANSLATION ENGINE (Authentic Multi-Language API) */
-    async function executeTranslation() {
-      const text = document.getElementById('srcText').value.trim();
-      const target = document.getElementById('targetLang').value;
-      let source = document.getElementById('srcLang').value;
+    function hideSuggestionPrompt() {
+      document.getElementById('grammarPrompt').style.display = 'none';
+      pendingCorrection = null;
+    }
+
+    /* GRAMMAR CHECK HEURISTICS & AUDIT */
+    async function auditEnglishSentence(text) {
+      let corrected = text;
+      let hasError = false;
+
+      // 1. Common English grammatical errors and spoken omissions
+      const quickFixes = [
+        { regex: /\bwhere your home\b/gi, fix: 'where is your home' },
+        { regex: /\bwhere your\b/gi, fix: 'where is your' },
+        { regex: /\bwhat your\b/gi, fix: 'what is your' },
+        { regex: /\bYou is\b/gi, fix: 'You are' },
+        { regex: /\byou is\b/gi, fix: 'you are' },
+        { regex: /\bHe are\b/gi, fix: 'He is' },
+        { regex: /\bhe are\b/gi, fix: 'he is' },
+        { regex: /\bShe are\b/gi, fix: 'She is' },
+        { regex: /\bshe are\b/gi, fix: 'she is' },
+        { regex: /\bThey is\b/gi, fix: 'They are' },
+        { regex: /\bthey is\b/gi, fix: 'they are' },
+        { regex: /\bI is\b/gi, fix: 'I am' },
+        { regex: /\bi is\b/gi, fix: 'I am' },
+        { regex: /\bis go home\b/gi, fix: 'are going home' },
+        { regex: /\bis go\b/gi, fix: 'are going' }
+      ];
+
+      quickFixes.forEach(rule => {
+        if (rule.regex.test(corrected)) {
+          hasError = true;
+          corrected = corrected.replace(rule.regex, rule.fix);
+        }
+      });
+
+      // 2. LanguageTool Check
+      try {
+        const res = await fetch('https://api.languagetool.org/v2/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ text: corrected, language: 'en-US' })
+        });
+        const data = await res.json();
+        if (data.matches && data.matches.length > 0) {
+          const actionable = data.matches.filter(m => m.replacements && m.replacements.length > 0);
+          if (actionable.length > 0) {
+            hasError = true;
+            actionable.sort((a, b) => b.offset - a.offset);
+            actionable.forEach(m => {
+              const wrongWord = corrected.substring(m.offset, m.offset + m.length);
+              corrected = corrected.substring(0, m.offset) + m.replacements[0].value + corrected.substring(m.offset + m.length);
+            });
+          }
+        }
+      } catch (e) {
+        // Continue with rule-based heuristics if offline or blocked
+      }
+
+      return { hasError: hasError && corrected.toLowerCase() !== text.toLowerCase(), correctedText: corrected };
+    }
+
+    /* TRANSLATION FLOW WITH CONFIRMATION */
+    async function startTranslationProcess() {
+      const srcInput = document.getElementById('srcText');
+      const text = srcInput.value.trim();
+      const source = document.getElementById('srcLang').value;
       if (!text) return;
 
+      hideSuggestionPrompt();
+
+      // Run grammar verification if input is in English
+      if (source === 'en' || source === 'auto') {
+        document.getElementById('targetText').value = 'Auditing sentence structure...';
+        const audit = await auditEnglishSentence(text);
+        if (audit.hasError) {
+          pendingCorrection = audit.correctedText;
+          document.getElementById('suggestedPreviewText').innerText = `"${audit.correctedText}"`;
+          document.getElementById('grammarPrompt').style.display = 'block';
+          document.getElementById('targetText').value = 'Awaiting your confirmation above...';
+          return;
+        }
+      }
+
+      // No grammar issues detected; proceed with translation
+      proceedTranslation(text);
+    }
+
+    function acceptSuggestedCorrection() {
+      if (pendingCorrection) {
+        document.getElementById('srcText').value = pendingCorrection;
+        updateWordCount();
+        const textToTranslate = pendingCorrection;
+        hideSuggestionPrompt();
+        proceedTranslation(textToTranslate);
+      }
+    }
+
+    function ignoreAndTranslateDirectly() {
+      const originalText = document.getElementById('srcText').value.trim();
+      hideSuggestionPrompt();
+      proceedTranslation(originalText);
+    }
+
+    async function proceedTranslation(text) {
+      const target = document.getElementById('targetLang').value;
+      const source = document.getElementById('srcLang').value;
       document.getElementById('targetText').value = 'Translating...';
 
       try {
@@ -488,7 +656,7 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
         const transcript = event.results[0][0].transcript;
         document.getElementById('srcText').value = transcript;
         updateWordCount();
-        executeTranslation();
+        startTranslationProcess();
       };
       recognition.onend = () => {
         isRecording = false;
@@ -534,7 +702,7 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       if (text) navigator.clipboard.writeText(text);
     }
 
-    /* GRAMMAR AUDIT & AUTOMATED CORRECTION */
+    /* DETAILED AI MODAL AUDIT */
     async function openAIAssistant() {
       const text = document.getElementById('srcText').value.trim();
       const modal = document.getElementById('aiModal');
@@ -546,64 +714,19 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
         return;
       }
 
-      body.innerHTML = '<p style="color:var(--primary); font-size:13px;">Running full linguistic and grammatical check...</p>';
+      body.innerHTML = '<p style="color:var(--primary); font-size:13px;">Analyzing input text...</p>';
+      const audit = await auditEnglishSentence(text);
 
-      // Step 1: Client heuristic check (Handles standard subject-verb issues instantly)
-      let detectedIssues = [];
-      let autoCorrected = text;
-
-      const grammarRules = [
-        { regex: /\bYou is\b/gi, fix: 'You are', msg: '"You" takes the plural verb "are", not "is".' },
-        { regex: /\bHe are\b/gi, fix: 'He is', msg: '"He" takes the singular verb "is".' },
-        { regex: /\bShe are\b/gi, fix: 'She is', msg: '"She" takes the singular verb "is".' },
-        { regex: /\bThey is\b/gi, fix: 'They are', msg: '"They" takes the plural verb "are".' },
-        { regex: /\bI is\b/gi, fix: 'I am', msg: '"I" pairs with "am".' },
-        { regex: /\bis go\b/gi, fix: 'are going', msg: 'Use continuous tense "are going" or base verb "go".' },
-        { regex: /\bgo to home\b/gi, fix: 'go home', msg: 'In English, "home" functions adverbially without "to".' }
-      ];
-
-      grammarRules.forEach(rule => {
-        if (rule.regex.test(autoCorrected)) {
-          detectedIssues.push(rule.msg);
-          autoCorrected = autoCorrected.replace(rule.regex, rule.fix);
-        }
-      });
-
-      // Step 2: LanguageTool public grammar check API
-      try {
-        const response = await fetch('https://api.languagetool.org/v2/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ text: text, language: 'en-US' })
-        });
-        const data = await response.json();
-
-        if (data.matches && data.matches.length > 0) {
-          data.matches.forEach(m => {
-            detectedIssues.push(m.message);
-            if (m.replacements && m.replacements[0]) {
-              const wrongWord = text.substring(m.offset, m.offset + m.length);
-              autoCorrected = autoCorrected.replace(wrongWord, m.replacements[0].value);
-            }
-          });
-        }
-      } catch (e) {
-        // Fallback uses heuristic check if API network request is blocked
-      }
-
-      // Step 3: Render suggestions & Auto-Edit button
-      if (detectedIssues.length > 0) {
+      if (audit.hasError) {
         body.innerHTML = `
           <div class="issue-box">
-            <strong>⚠️ Grammatical Issues Found:</strong>
-            <ul style="margin: 6px 0 0 16px; line-height: 1.5;">
-              ${detectedIssues.map(msg => `<li>${msg}</li>`).join('')}
-            </ul>
+            <strong>⚠️ Grammatical Issue Found:</strong>
+            <p style="margin-top:4px;">The input sentence does not follow standard English syntax or subject-verb agreement.</p>
           </div>
           <div class="suggestion-box">
-            <strong>💡 Suggested Correction:</strong>
-            <p style="margin-top: 4px; font-weight: 600; color: #a7f3d0;">${autoCorrected}</p>
-            <button class="fix-btn" onclick="applyCorrection('${autoCorrected.replace(/'/g, "\\'")}')">Apply Correction & Auto-Translate</button>
+            <strong>💡 Recommended Replacement:</strong>
+            <p style="margin-top: 4px; font-weight: 600; color: #a7f3d0;">${audit.correctedText}</p>
+            <button class="action-btn" style="width:100%; margin-top:8px;" onclick="applyFromModal('${audit.correctedText.replace(/'/g, "\\'")}')">Auto-Correct &amp; Translate</button>
           </div>
         `;
       } else {
@@ -616,11 +739,12 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       }
     }
 
-    function applyCorrection(fixedText) {
-      document.getElementById('srcText').value = fixedText;
+    function applyFromModal(newText) {
+      document.getElementById('srcText').value = newText;
       updateWordCount();
       forceCloseModal();
-      executeTranslation();
+      hideSuggestionPrompt();
+      proceedTranslation(newText);
     }
 
     function closeAIAssistant(e) {
@@ -658,7 +782,7 @@ items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
       document.getElementById('homoOutput').value = out;
     }
 
-    /* TAB 3: RUNTIME JAVASCRIPT SANDBOX */
+    /* TAB 3: JAVASCRIPT SANDBOX */
     function runCode() {
       const code = document.getElementById('codeEditor').value;
       const out = document.getElementById('termOutput');
