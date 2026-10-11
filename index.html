@@ -2,1368 +2,684 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Universal Multi-Engine Studio</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            theme: {
-              bg: '#12151b',
-              card: '#181d26',
-              surface: '#202735',
-              border: '#2e384d',
-              accent: '#38bdf8',
-              accentHover: '#0ea5e9',
-              muted: '#7e8b9f',
-              text: '#e2e8f0',
-              highlight: '#f87171'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MultiTranslate Hub & Toolkit</title>
   <style>
-    body {
-      background: radial-gradient(circle at 50% 15%, #19202c 0%, #11141a 100%);
-      color: #e2e8f0;
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-      user-select: auto;
+    :root {
+      --bg: #0b1120;
+      --card-bg: #151e32;
+      --border: #24324f;
+      --primary: #38bdf8;
+      --accent: #818cf8;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --success: #34d399;
+      --danger: #f87171;
     }
-
-    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #2e384d; border-radius: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #3d4a66; }
-
-    /* Top Tab Styles matching preview */
-    .nav-tab-btn {
-      position: relative;
-      color: #7e8b9f;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .nav-tab-btn.active {
-      color: #38bdf8;
-    }
-    .nav-tab-btn.active::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background-color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-      border-radius: 2px 2px 0 0;
-    }
-
-    /* Dropdown customization */
-    .styled-select {
-      background-color: #202735;
-      border: 1px solid #2e384d;
-      color: #e2e8f0;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%237e8b9f'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.75rem center;
-      background-size: 1rem;
-      padding-right: 2.2rem;
-    }
-
-    /* Synchronized Highlight Underline Overlay */
-    .editor-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 240px;
-    }
-    .editor-backdrop, .editor-textarea {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 70px;
+    }
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 14px 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: none;
       border: none;
-      box-sizing: border-box;
-      line-height: 1.625;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      font-size: 1.05rem;
-      font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
     }
-    .editor-backdrop {
-      z-index: 1;
-      color: transparent;
-      pointer-events: none;
-      overflow: hidden;
-      user-select: none;
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(56, 189, 248, 0.05);
     }
-    .editor-textarea {
-      z-index: 2;
-      background: transparent;
-      color: #e2e8f0;
-      resize: none;
+    /* Main Content */
+    .container {
+      padding: 14px;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    select, input, textarea {
+      width: 100%;
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px;
+      font-size: 14px;
       outline: none;
     }
-    
-    /* Squiggly Red Underline for Grammar, Lookalike & Syntax Errors */
-    .error-squiggly {
-      text-decoration: underline;
-      text-decoration-style: wavy;
-      text-decoration-color: #f87171;
-      text-decoration-thickness: 1.7px;
-      text-underline-offset: 4px;
-      background-color: rgba(239, 68, 68, 0.08);
-      border-radius: 2px;
+    select {
+      cursor: pointer;
     }
-
-    /* Draggable floating sparkle widget */
-    #draggable-ai-fab {
-      touch-action: none;
-      cursor: grab;
-      user-select: none;
-      z-index: 60;
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.5;
     }
-    #draggable-ai-fab:active {
-      cursor: grabbing;
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .icon-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover, .icon-btn:active {
+      color: var(--primary);
+      background: rgba(56, 189, 248, 0.1);
+    }
+    .icon-btn.recording {
+      color: var(--danger);
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.15); }
+    }
+    .swap-container {
+      display: flex;
+      justify-content: center;
+      margin: -6px 0 10px 0;
+    }
+    .action-btn {
+      background: var(--primary);
+      color: #0b1120;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+    .action-btn:active {
+      opacity: 0.85;
+    }
+    /* Floating AI Button */
+    .ai-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 20px;
+      width: 52px;
+      height: 52px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      border: none;
+      color: #0b1120;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 18px rgba(56, 189, 248, 0.4);
+      cursor: pointer;
+      z-index: 500;
+    }
+    /* AI Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-card {
+      background: #151e32;
+      border: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 600px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      animation: slideUp 0.25s ease-out;
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .issue-box {
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .suggestion-box {
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .fix-btn {
+      background: var(--success);
+      color: #064e3b;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 6px;
+      width: 100%;
+    }
+    /* Terminal Output */
+    .terminal-out {
+      background: #050811;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 13px;
+      min-height: 120px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #a5f3fc;
+      margin-top: 10px;
     }
   </style>
 </head>
-<body class="flex flex-col min-h-screen selection:bg-sky-500/30 selection:text-white">
+<body>
 
-  <header class="border-b border-theme-border/70 bg-[#12151b]/95 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-3 sm:px-6">
-      <nav class="grid grid-cols-3 text-center pt-3">
-        <!-- Tab 1 -->
-        <button id="nav-tab-1" onclick="switchActiveTab(1)" class="nav-tab-btn active flex flex-col items-center justify-center pb-3 text-xs sm:text-sm font-semibold tracking-wider uppercase transition">
-          <div class="flex items-center space-x-1 mb-1">
-            <span class="text-base sm:text-lg">文<span class="text-xs">A</span></span>
-          </div>
-          <span class="text-[10px] sm:text-xs">TAB 1: LANGUAGE TRANSLATOR</span>
-        </button>
+  <!-- Navigation Bar -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-trans')">
+      <span>文/A</span>
+      <span>Translate</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-homo')">
+      <span>TT</span>
+      <span>Homoglyphs</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab-code')">
+      <span>&gt;_</span>
+      <span>Compiler</span>
+    </button>
+  </nav>
 
-        <!-- Tab 2 -->
-        <button id="nav-tab-2" onclick="switchActiveTab(2)" class="nav-tab-btn flex flex-col items-center justify-center pb-3 text-xs sm:text-sm font-semibold tracking-wider uppercase transition">
-          <div class="flex items-center space-x-1 mb-1">
-            <span class="font-serif font-bold text-base sm:text-lg">T<span class="text-xs">T</span></span>
-          </div>
-          <span class="text-[10px] sm:text-xs">TAB 2: FONT & HOMOGLYPHS</span>
-        </button>
-
-        <!-- Tab 3 -->
-        <button id="nav-tab-3" onclick="switchActiveTab(3)" class="nav-tab-btn flex flex-col items-center justify-center pb-3 text-xs sm:text-sm font-semibold tracking-wider uppercase transition">
-          <div class="flex items-center space-x-1 mb-1">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          </div>
-          <span class="text-[10px] sm:text-xs">TAB 3: CRYPTO & COMPILER</span>
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <main class="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8 flex flex-col justify-center">
-
-    <!-- =========================================================
-         TAB 1: LANGUAGE TRANSLATOR
-         ========================================================= -->
-    <section id="content-tab-1" class="flex flex-col flex-1 justify-center">
-      <div class="grid grid-cols-1 lg:grid-cols-[1fr,auto,1fr] gap-4 items-stretch relative">
-        
-        <!-- Input Card -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          <!-- Language Selector directly above input (Default: Detected Language) -->
-          <div class="mb-3 flex items-center justify-between">
-            <select id="lang-src-select" onchange="runLanguageTranslation()" class="styled-select text-xs sm:text-sm font-medium rounded-xl px-3.5 py-2 w-auto max-w-[210px] cursor-pointer hover:border-sky-500/50 transition">
-              <option value="auto" selected>Detected Language</option>
-              <option value="en">English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="hi">Hindi</option>
-              <option value="ru">Russian</option>
-              <option value="zh">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="ar">Arabic</option>
-              <option value="pt">Portuguese</option>
-              <option value="it">Italian</option>
-            </select>
-
-            <!-- Quick Clear (✕) Button -->
-            <button id="lang-clear-btn" onclick="clearInputField('lang-input'); runLanguageTranslation();" class="hidden p-1.5 rounded-lg text-theme-muted hover:text-white hover:bg-theme-surface transition" title="Clear text">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-
-          <!-- Input Area with Overlay Squiggly Highlights -->
-          <div class="flex-1 editor-wrapper relative">
-            <div id="lang-input-backdrop" class="editor-backdrop custom-scroll"></div>
-            <textarea id="lang-input" placeholder="Enter text here..." class="editor-textarea custom-scroll placeholder-[#4d596e]"></textarea>
-          </div>
-
-          <!-- Bottom Bar (Voice, Listen, Uncapped Counter) -->
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <div class="flex items-center space-x-2">
-              <button id="mic-btn" onclick="toggleDictation()" title="Speech-to-text" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-              </button>
-              <button onclick="readAloudText('lang-input')" title="Listen input text" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
-              </button>
-            </div>
-            <!-- Uncapped Counter -->
-            <div class="flex items-center space-x-2 font-mono text-[11px] text-theme-muted">
-              <span id="lang-char-count">0 characters</span>
-              <span class="text-theme-border">|</span>
-              <span id="lang-word-count">0 words</span>
-            </div>
-          </div>
+  <div class="container">
+    <!-- TAB 1: TRANSLATOR & GRAMMAR AUDIT -->
+    <div id="tab-trans" class="tab-pane active">
+      <div class="card">
+        <div class="card-header">
+          <select id="srcLang" onchange="resetRecLang()">
+            <option value="auto">Auto-Detect</option>
+            <option value="en" selected>English</option>
+            <option value="hi">Hindi (हिंदी)</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ru">Russian</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
         </div>
-
-        <!-- Center Bidirectional Swap Button matching Preview -->
-        <div class="flex lg:flex-col items-center justify-center my-1 lg:my-0">
-          <button onclick="swapTranslationCards()" title="Swap languages" class="flex flex-col items-center justify-center p-3 rounded-xl bg-[#202735] hover:bg-[#283244] border border-theme-border text-theme-muted hover:text-sky-400 shadow-xl transition-all active:scale-95 group">
-            <svg class="w-5 h-5 transform group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>
-            <span class="text-[9px] uppercase font-bold mt-1 tracking-wider text-theme-muted group-hover:text-sky-400">Swap</span>
-          </button>
-        </div>
-
-        <!-- Output Card -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          <!-- Language Selector directly above output (Default: English) -->
-          <div class="mb-3 flex items-center justify-between">
-            <select id="lang-tgt-select" onchange="runLanguageTranslation()" class="styled-select text-xs sm:text-sm font-medium rounded-xl px-3.5 py-2 w-auto max-w-[210px] cursor-pointer hover:border-sky-500/50 transition">
-              <option value="en" selected>English</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="hi">Hindi</option>
-              <option value="ru">Russian</option>
-              <option value="zh">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="ar">Arabic</option>
-              <option value="pt">Portuguese</option>
-              <option value="it">Italian</option>
-            </select>
-            <span id="trans-state-indicator" class="text-[11px] font-mono text-[#546073]">Ready</span>
+        <textarea id="srcText" placeholder="Enter text or speak..." oninput="updateWordCount()"></textarea>
+        <div class="card-footer">
+          <div class="icon-actions">
+            <button class="icon-btn" id="micBtn" onclick="toggleSpeech()" title="Speech to text">🎤</button>
+            <button class="icon-btn" onclick="speakText('srcText', 'srcLang')" title="Listen">🔊</button>
+            <button class="icon-btn" onclick="clearInput()" title="Clear">🗑️</button>
           </div>
-
-          <!-- Output Display Container -->
-          <div class="flex-1 flex flex-col">
-            <div id="lang-output" class="w-full flex-1 text-base sm:text-lg text-theme-text custom-scroll leading-relaxed whitespace-pre-wrap select-text">
-              <span class="text-[#4d596e]">Translation appears here...</span>
-            </div>
-          </div>
-
-          <!-- Bottom Actions (Listen, Copy, Manual Trigger) -->
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <div class="flex items-center space-x-2">
-              <button onclick="readAloudText('lang-output')" title="Listen to translation" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
-              </button>
-              <button onclick="copyToClipboard('lang-output')" title="Copy to clipboard" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              </button>
-            </div>
-            <button onclick="runLanguageTranslation()" class="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-900 font-semibold text-xs transition shadow">Translate</button>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- =========================================================
-         TAB 2: FONT & HOMOGLYPHS TRANSLATOR
-         ========================================================= -->
-    <section id="content-tab-2" class="hidden flex-col flex-1 justify-center">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        
-        <!-- Input Card -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          <div class="mb-3 flex items-center justify-between">
-            <span class="text-xs uppercase font-semibold tracking-wider text-theme-muted">Plain ASCII / Original Text</span>
-            <div class="flex items-center space-x-2">
-              <span id="font-char-stat" class="text-xs font-mono text-[#546073]">0 chars</span>
-              <button id="font-clear-btn" onclick="clearInputField('font-input'); runFontEngine();" class="hidden p-1 rounded hover:bg-theme-surface text-theme-muted hover:text-white transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="flex-1 editor-wrapper relative">
-            <div id="font-input-backdrop" class="editor-backdrop custom-scroll font-mono"></div>
-            <textarea id="font-input" placeholder="Type or paste domain (e.g. google.com), words, or sentences to inspect & convert..." class="editor-textarea custom-scroll font-mono placeholder-[#4d596e]"></textarea>
-          </div>
-
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <span class="text-[11px] text-amber-400/90 flex items-center space-x-1">
-              <span>●</span>
-              <span>Red squiggles indicate lookalikes / spoof risks</span>
-            </span>
-            <span class="font-mono text-[11px] text-[#546073]">Uncapped Length</span>
-          </div>
-        </div>
-
-        <!-- Output Card -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
-            <select id="font-style-select" onchange="runFontEngine()" class="styled-select text-xs sm:text-sm font-medium rounded-xl px-3.5 py-2 cursor-pointer hover:border-sky-500/50 transition">
-              <option value="homoglyph" selected>Unicode Homoglyphs (Cyrillic / Greek Spoofing)</option>
-              <option value="monospace">Mathematical Monospace</option>
-              <option value="bold-sans">Bold Sans-Serif</option>
-              <option value="fraktur">Gothic / Fraktur</option>
-              <option value="italic">Italic Serif</option>
-              <option value="fullwidth">Fullwidth (Asian Monospace)</option>
-              <option value="upsidedown">Inverted / Upside Down</option>
-              <option value="smallcaps">Small Capitals</option>
-            </select>
-            <span id="homoglyph-count-pill" class="text-[11px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30">0 Substituted</span>
-          </div>
-
-          <div class="flex-1 flex flex-col">
-            <div id="font-output" class="w-full flex-1 text-base sm:text-lg text-theme-text custom-scroll leading-relaxed whitespace-pre-wrap select-text break-all">
-              <span class="text-[#4d596e]">Transformed font & lookalikes will render here...</span>
-            </div>
-
-            <!-- Codepoint & Diff Diagnostic Panel -->
-            <div id="homoglyph-codepoints-panel" class="mt-3 pt-3 border-t border-theme-border/60 hidden">
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] uppercase font-mono tracking-wider text-sky-400 font-semibold">Substituted Homoglyph Codepoints</span>
-                <span id="diff-ratio" class="text-[10px] font-mono text-theme-muted"></span>
-              </div>
-              <div id="homoglyph-badge-list" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scroll"></div>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <button onclick="copyToClipboard('font-output')" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition" title="Copy output">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            </button>
-            <span class="text-[11px] font-mono text-[#546073]">IDN & Anti-Phishing Security Suite</span>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- =========================================================
-         TAB 3: CRYPTO & COMPILER LAB
-         ========================================================= -->
-    <section id="content-tab-3" class="hidden flex-col flex-1 justify-center">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        
-        <!-- Left: Input & Engine Controls -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <select id="crypto-tool-select" onchange="changeCryptoEngine()" class="styled-select text-xs sm:text-sm font-medium rounded-xl px-3.5 py-2 cursor-pointer hover:border-sky-500/50 transition">
-              <option value="base64" selected>Base64 (Encode / Decode)</option>
-              <option value="hex">Hexadecimal (Bytes / ASCII)</option>
-              <option value="binary">Binary (8-bit ASCII Stream)</option>
-              <option value="rot13">ROT13 / Caesar Substitution</option>
-              <option value="sha256">SHA-256 / SHA-1 Cryptographic Hash</option>
-              <option value="url">URL Percent Encoding</option>
-              <option value="compiler">Live JavaScript / HTML Compiler</option>
-              <option value="decompiler">Bytecode & Hex Disassembler</option>
-            </select>
-
-            <!-- Mode Switch for Encoders -->
-            <div id="crypto-mode-switch" class="flex items-center space-x-1 bg-[#12151b] p-1 rounded-xl border border-theme-border">
-              <button id="btn-enc" onclick="setCryptoDirection('enc')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-500 text-slate-900 transition">Encode</button>
-              <button id="btn-dec" onclick="setCryptoDirection('dec')" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-theme-muted hover:text-white transition">Decode</button>
-            </div>
-
-            <!-- Run Button for Compiler -->
-            <button id="btn-run-code" onclick="executeCompilerCode()" class="hidden px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center space-x-1.5 transition shadow">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
-              <span>Run Code</span>
-            </button>
-          </div>
-
-          <!-- Quick Samples Load Bar -->
-          <div class="flex items-center space-x-1.5 mb-2 overflow-x-auto pb-1 custom-scroll text-[11px]">
-            <span class="text-theme-muted text-[10px] uppercase font-mono">Load Sample:</span>
-            <button onclick="loadSamplePreset('js')" class="px-2 py-0.5 rounded bg-theme-surface hover:bg-theme-border text-sky-400 font-mono transition">JS Logic</button>
-            <button onclick="loadSamplePreset('html')" class="px-2 py-0.5 rounded bg-theme-surface hover:bg-theme-border text-emerald-400 font-mono transition">HTML Card</button>
-            <button onclick="loadSamplePreset('b64')" class="px-2 py-0.5 rounded bg-theme-surface hover:bg-theme-border text-amber-400 font-mono transition">Auth Token</button>
-            <button onclick="loadSamplePreset('hex')" class="px-2 py-0.5 rounded bg-theme-surface hover:bg-theme-border text-purple-400 font-mono transition">Hex Dump</button>
-          </div>
-
-          <!-- Input Code Editor with Overlay Squiggly Highlights -->
-          <div class="flex-1 editor-wrapper relative">
-            <div id="crypto-input-backdrop" class="editor-backdrop custom-scroll font-mono text-sm"></div>
-            <textarea id="crypto-input" placeholder="Type or paste payload, string, or code here..." class="editor-textarea custom-scroll font-mono text-sm placeholder-[#4d596e]"></textarea>
-          </div>
-
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <button id="crypto-clear-btn" onclick="clearInputField('crypto-input'); runCryptoEngine();" class="p-1 rounded hover:bg-theme-surface hover:text-white transition">Clear Editor</button>
-            <span id="crypto-byte-stat" class="font-mono text-[11px] text-[#546073]">0 bytes</span>
-          </div>
-        </div>
-
-        <!-- Right: Output / Sandbox Container -->
-        <div class="flex flex-col bg-theme-card border border-theme-border rounded-2xl p-4 sm:p-5 shadow-2xl relative min-h-[480px]">
-          <div class="mb-3 flex items-center justify-between">
-            <span class="text-xs uppercase font-mono font-semibold tracking-wider text-sky-400">Execution / Terminal Console</span>
-            <span id="crypto-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Ready</span>
-          </div>
-
-          <div class="flex-1 flex flex-col">
-            <div id="crypto-output" class="w-full flex-1 text-sm font-mono text-theme-text custom-scroll leading-relaxed whitespace-pre-wrap select-text break-all">
-              <span class="text-[#4d596e] font-sans">Execution or transformed output will appear here...</span>
-            </div>
-            <!-- Sandboxed iFrame for live HTML rendering -->
-            <iframe id="compiler-frame" class="hidden w-full flex-1 bg-white rounded-xl border border-theme-border min-h-[290px]"></iframe>
-          </div>
-
-          <div class="flex items-center justify-between pt-3 border-t border-theme-border/60 text-theme-muted text-xs mt-2">
-            <button onclick="copyToClipboard('crypto-output')" class="p-2 rounded-lg hover:bg-theme-surface hover:text-white transition" title="Copy output">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            </button>
-            <span class="text-[11px] font-mono text-[#546073]">Isolated Browser Virtual Machine</span>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Draggable AI Diamond Sparkle Widget -->
-  <div id="draggable-ai-fab" class="fixed bottom-6 right-6 flex flex-col items-end">
-    <!-- Pop-up Diagnostics Card -->
-    <div id="ai-modal-card" class="hidden w-80 sm:w-96 rounded-2xl bg-[#181d26]/95 border border-theme-border shadow-2xl p-4 mb-3 backdrop-blur-lg flex flex-col transition-all">
-      <div class="flex items-center justify-between pb-2.5 border-b border-theme-border/60">
-        <div class="flex items-center space-x-2">
-          <svg class="w-4 h-4 text-sky-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/>
-          </svg>
-          <span class="text-xs font-semibold uppercase tracking-wider text-white">Diagnostics & AI Auto-Fix</span>
-        </div>
-        <button onclick="toggleAIDiagnosticsCard(event)" class="text-theme-muted hover:text-white p-1">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="py-3 flex-1">
-        <div class="flex items-center justify-between mb-2">
-          <span id="ai-active-scope" class="text-[11px] font-mono text-sky-400 font-semibold">Scope: Tab 1</span>
-          <span id="ai-error-tally" class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30">0 Detected</span>
-        </div>
-        <div id="ai-issues-list" class="space-y-2 max-h-48 overflow-y-auto custom-scroll text-xs">
-          <!-- Dynamically populated issues -->
+          <span id="charCount">0 characters | 0 words</span>
         </div>
       </div>
 
-      <div class="pt-2.5 border-t border-theme-border/60 flex items-center justify-between">
-        <span class="text-[10px] text-theme-muted font-mono">Drag icon anywhere</span>
-        <button id="ai-batch-fix-btn" onclick="executeAIBatchFix()" class="hidden px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-900 font-bold text-xs transition shadow">
-          Auto-Fix All
+      <div class="swap-container">
+        <button class="icon-btn" onclick="swapLanguages()" style="background:var(--card-bg); border:1px solid var(--border); padding:8px 16px; border-radius:20px; font-size:13px; font-weight:600;">
+          ⇅ Swap
         </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <select id="targetLang">
+            <option value="hi" selected>Hindi (हिंदी)</option>
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ru">Russian</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
+        </div>
+        <textarea id="targetText" readonly placeholder="Authentic native translation appears here..."></textarea>
+        <div class="card-footer">
+          <div class="icon-actions">
+            <button class="icon-btn" onclick="speakText('targetText', 'targetLang')" title="Listen output">🔊</button>
+            <button class="icon-btn" onclick="copyResult()" title="Copy result">📋</button>
+          </div>
+          <button class="action-btn" style="width: auto; padding: 6px 14px; font-size: 12px;" onclick="executeTranslation()">Translate</button>
+        </div>
       </div>
     </div>
 
-    <!-- The Diamond Sparkle Drag Handle Button -->
-    <div class="relative">
-      <button id="ai-sparkle-btn" onclick="handleSparkleClick(event)" title="AI Quality & Syntax Assistant (Drag to Move)" class="p-3.5 rounded-full bg-[#202735] hover:bg-[#283244] border border-theme-border hover:border-sky-400 text-sky-400 shadow-2xl transition transform active:scale-95 flex items-center justify-center">
-        <svg class="w-6 h-6 text-sky-400 transition-colors pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
-        </svg>
-      </button>
-      <!-- Small notification badge for detected squiggles -->
-      <span id="ai-pulse-counter" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-bold text-[10px] flex items-center justify-center border-2 border-[#181d26] pointer-events-none">0</span>
+    <!-- TAB 2: HOMOGLYPHS & CIPHERS -->
+    <div id="tab-homo" class="tab-pane">
+      <div class="card">
+        <h4 style="margin-bottom: 8px;">Unicode Homoglyphs & Ciphers</h4>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Converts ASCII to lookalike characters or encodes cryptographic ciphers.</p>
+        <textarea id="homoInput" placeholder="Enter text to mutate or cipher..."></textarea>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin: 10px 0;">
+          <button class="action-btn" onclick="convertHomoglyphs()">Homoglyph (Cyrillic)</button>
+          <button class="action-btn" onclick="runCipher('rot13')">ROT13 Cipher</button>
+          <button class="action-btn" onclick="runCipher('base64')">Base64 Encode</button>
+          <button class="action-btn" onclick="runCipher('binary')">Binary ASCII</button>
+        </div>
+        <textarea id="homoOutput" readonly placeholder="Output will appear here..."></textarea>
+      </div>
+    </div>
+
+    <!-- TAB 3: SANDBOX CODE COMPILER -->
+    <div id="tab-code" class="tab-pane">
+      <div class="card">
+        <h4 style="margin-bottom: 8px;">JavaScript Execution Sandbox</h4>
+        <textarea id="codeEditor" rows="6" style="font-family:monospace; font-size:13px;">// Enter standard JavaScript:
+const items = ["Earth", "Mars", "Jupiter"];
+items.forEach(planet => console.log("Orbiting: " + planet));</textarea>
+        <div style="margin-top: 10px;">
+          <button class="action-btn" onclick="runCode()">Run Code 🚀</button>
+        </div>
+        <div class="terminal-out" id="termOutput">&gt; Console ready.</div>
+      </div>
     </div>
   </div>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 transition-all duration-300 bg-[#202735] border border-theme-border text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl z-50 pointer-events-none">
-    <span id="toast-message">Copied to clipboard</span>
+  <!-- FLOATING AI AUDIT BUTTON -->
+  <button class="ai-fab" onclick="openAIAssistant()" title="Analyze Grammar & Edit">✦</button>
+
+  <!-- AI MODAL SHEET -->
+  <div class="modal-overlay" id="aiModal" onclick="closeAIAssistant(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3><span>✦</span> Grammar Audit & AI Assistant</h3>
+        <button class="icon-btn" onclick="forceCloseModal()" style="font-size: 16px;">✕</button>
+      </div>
+      <div class="modal-body" id="aiModalBody">
+        <p style="color:var(--text-muted); font-size:13px;">Analyzing input text...</p>
+      </div>
+    </div>
   </div>
 
   <script>
-    /* ==============================================================
-     * Global State & LocalStorage Persistence
-     * ============================================================== */
-    let currentTab = 1;
-    let cryptoDirection = 'enc';
-    let translationDebounce = null;
-    let activeIssues = [];
-    let isDragging = false;
-    let dragStartX = 0, dragStartY = 0;
-    let initialLeft = 0, initialTop = 0;
-    let hasMovedDuringDrag = false;
-    let speechRecognition = null;
-    let isRecognizingSpeech = false;
-
-    // Toast helper
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toast-message').textContent = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-        toast.classList.remove('translate-y-0', 'opacity-100');
-      }, 2000);
+    /* TAB SWITCHER */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'tab-trans') document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      if (tabId === 'tab-homo') document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      if (tabId === 'tab-code') document.querySelectorAll('.tab-btn')[2].classList.add('active');
     }
 
-    // Clipboard helper
-    function copyToClipboard(id) {
-      const el = document.getElementById(id);
-      const text = el.value !== undefined ? el.value : el.innerText;
-      if (!text || text.includes('appears here')) {
-        showToast('Nothing to copy');
-        return;
-      }
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      document.body.appendChild(temp);
-      temp.select();
-      try {
-        document.execCommand('copy');
-        showToast('Copied to clipboard');
-      } catch (err) {
-        showToast('Failed to copy');
-      }
-      document.body.removeChild(temp);
+    /* WORD COUNT & STATS */
+    function updateWordCount() {
+      const text = document.getElementById('srcText').value;
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      document.getElementById('charCount').innerText = `${chars} characters | ${words} words`;
     }
 
-    // Clear input helper
-    function clearInputField(id) {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-      saveWorkbenchState();
-      syncHighlightOverlays();
+    function clearInput() {
+      document.getElementById('srcText').value = '';
+      document.getElementById('targetText').value = '';
+      updateWordCount();
     }
 
-    // Audio text-to-speech helper
-    function readAloudText(id) {
-      if (!('speechSynthesis' in window)) {
-        showToast('Speech synthesis not supported');
-        return;
-      }
-      const el = document.getElementById(id);
-      const text = el.value !== undefined ? el.value : el.innerText;
-      if (!text || text.includes('appears here')) return;
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(u);
+    function swapLanguages() {
+      const s = document.getElementById('srcLang');
+      const t = document.getElementById('targetLang');
+      if (s.value === 'auto') s.value = 'en';
+      const tempLang = s.value;
+      s.value = t.value;
+      t.value = tempLang;
+
+      const srcText = document.getElementById('srcText');
+      const targetText = document.getElementById('targetText');
+      const tempVal = srcText.value;
+      srcText.value = targetText.value;
+      targetText.value = tempVal;
+      updateWordCount();
     }
 
-    /* ==============================================================
-     * Tab Navigation & Memory State
-     * ============================================================== */
-    function switchActiveTab(tabIndex) {
-      currentTab = tabIndex;
-      [1, 2, 3].forEach(i => {
-        document.getElementById(`content-tab-${i}`).classList.add('hidden');
-        document.getElementById(`nav-tab-${i}`).classList.remove('active');
-      });
-      document.getElementById(`content-tab-${tabIndex}`).classList.remove('hidden');
-      document.getElementById(`nav-tab-${tabIndex}`).classList.add('active');
-      saveWorkbenchState();
-      syncHighlightOverlays();
-    }
+    /* TRANSLATION ENGINE (Authentic Multi-Language API) */
+    async function executeTranslation() {
+      const text = document.getElementById('srcText').value.trim();
+      const target = document.getElementById('targetLang').value;
+      let source = document.getElementById('srcLang').value;
+      if (!text) return;
 
-    /* ==============================================================
-     * LocalStorage Auto-Save
-     * ============================================================== */
-    function saveWorkbenchState() {
-      try {
-        const state = {
-          tab: currentTab,
-          langInput: document.getElementById('lang-input').value,
-          langSrc: document.getElementById('lang-src-select').value,
-          langTgt: document.getElementById('lang-tgt-select').value,
-          fontInput: document.getElementById('font-input').value,
-          fontStyle: document.getElementById('font-style-select').value,
-          cryptoInput: document.getElementById('crypto-input').value,
-          cryptoTool: document.getElementById('crypto-tool-select').value,
-          cryptoDir: cryptoDirection
-        };
-        localStorage.setItem('multi_engine_workbench_data', JSON.stringify(state));
-      } catch (e) {
-        // Fallback for sandboxed storage
-      }
-    }
-
-    function loadWorkbenchState() {
-      try {
-        const raw = localStorage.getItem('multi_engine_workbench_data');
-        if (!raw) return;
-        const state = JSON.parse(raw);
-        if (state.langInput !== undefined) document.getElementById('lang-input').value = state.langInput;
-        if (state.langSrc) document.getElementById('lang-src-select').value = state.langSrc;
-        if (state.langTgt) document.getElementById('lang-tgt-select').value = state.langTgt;
-        if (state.fontInput !== undefined) document.getElementById('font-input').value = state.fontInput;
-        if (state.fontStyle) document.getElementById('font-style-select').value = state.fontStyle;
-        if (state.cryptoInput !== undefined) document.getElementById('crypto-input').value = state.cryptoInput;
-        if (state.cryptoTool) document.getElementById('crypto-tool-select').value = state.cryptoTool;
-        if (state.cryptoDir) setCryptoDirection(state.cryptoDir);
-        if (state.tab) switchActiveTab(state.tab);
-      } catch (e) {}
-    }
-
-    /* ==============================================================
-     * TAB 1: Language Translator Engine
-     * ============================================================== */
-    const LOCAL_TRANSLATIONS = {
-      "hello": { es: "hola", fr: "bonjour", de: "hallo", hi: "नमस्ते", ru: "привет", zh: "你好", ja: "こんにちは", ar: "مرحبا", pt: "olá", it: "ciao" },
-      "world": { es: "mundo", fr: "monde", de: "welt", hi: "दुनिया", ru: "мир", zh: "世界", ja: "世界", ar: "عالم", pt: "mundo", it: "mondo" },
-      "welcome": { es: "bienvenido", fr: "bienvenue", de: "willkommen", hi: "स्वागत है", ru: "добро пожаловать", zh: "欢迎", ja: "ようこそ", ar: "أهلا بك", pt: "bem-vindo", it: "benvenuto" }
-    };
-
-    function swapTranslationCards() {
-      const src = document.getElementById('lang-src-select');
-      const tgt = document.getElementById('lang-tgt-select');
-      const curSrc = src.value === 'auto' ? 'en' : src.value;
-      const curTgt = tgt.value;
-
-      src.value = curTgt;
-      tgt.value = curSrc;
-
-      const inputVal = document.getElementById('lang-input').value;
-      const outText = document.getElementById('lang-output').innerText;
-      if (outText && !outText.includes('appears here')) {
-        document.getElementById('lang-input').value = outText;
-      }
-      runLanguageTranslation();
-    }
-
-    async function runLanguageTranslation() {
-      const input = document.getElementById('lang-input').value.trim();
-      const outputEl = document.getElementById('lang-output');
-      const stateEl = document.getElementById('trans-state-indicator');
-      const srcLang = document.getElementById('lang-src-select').value;
-      const tgtLang = document.getElementById('lang-tgt-select').value;
-
-      saveWorkbenchState();
-      syncHighlightOverlays();
-
-      if (!input) {
-        outputEl.innerHTML = '<span class="text-[#4d596e]">Translation appears here...</span>';
-        stateEl.textContent = 'Ready';
-        return;
-      }
-
-      stateEl.textContent = 'Translating...';
-
-      // Instant local dictionary lookup
-      const lower = input.toLowerCase();
-      if (LOCAL_TRANSLATIONS[lower] && LOCAL_TRANSLATIONS[lower][tgtLang]) {
-        outputEl.textContent = LOCAL_TRANSLATIONS[lower][tgtLang];
-        stateEl.textContent = 'Instant';
-        return;
-      }
-
-      // External translation query
-      const querySrc = srcLang === 'auto' ? 'en' : srcLang;
-      try {
-        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(input)}&langpair=${querySrc}|${tgtLang}`);
-        const data = await response.json();
-        if (data?.responseData?.translatedText) {
-          outputEl.textContent = data.responseData.translatedText;
-          stateEl.textContent = 'Completed';
-        } else {
-          outputEl.textContent = input;
-          stateEl.textContent = 'Echo';
-        }
-      } catch (err) {
-        outputEl.textContent = input;
-        stateEl.textContent = 'Fallback';
-      }
-    }
-
-    // Voice dictation
-    function toggleDictation() {
-      const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const btn = document.getElementById('mic-btn');
-      if (!Speech) {
-        showToast('Speech Recognition not supported in this browser');
-        return;
-      }
-      if (isRecognizingSpeech) {
-        speechRecognition.stop();
-        isRecognizingSpeech = false;
-        btn.classList.remove('text-red-400');
-        return;
-      }
-
-      speechRecognition = new Speech();
-      speechRecognition.continuous = true;
-      speechRecognition.interimResults = true;
-
-      speechRecognition.onstart = () => {
-        isRecognizingSpeech = true;
-        btn.classList.add('text-red-400');
-        showToast('Listening...');
-      };
-
-      speechRecognition.onresult = (evt) => {
-        let str = '';
-        for (let i = evt.resultIndex; i < evt.results.length; i++) {
-          str += evt.results[i][0].transcript;
-        }
-        document.getElementById('lang-input').value = str;
-        runLanguageTranslation();
-      };
-
-      speechRecognition.onerror = () => {
-        isRecognizingSpeech = false;
-        btn.classList.remove('text-red-400');
-      };
-      speechRecognition.onend = () => {
-        isRecognizingSpeech = false;
-        btn.classList.remove('text-red-400');
-      };
-      speechRecognition.start();
-    }
-
-    /* ==============================================================
-     * TAB 2: Font & Lookalike Homoglyph Engine
-     * ============================================================== */
-    const HOMOGLYPH_MAP = {
-      'a': { char: 'а', code: 'U+0430', name: 'Cyrillic a' },
-      'c': { char: 'с', code: 'U+0441', name: 'Cyrillic es' },
-      'd': { char: 'ԁ', code: 'U+0501', name: 'Komi de' },
-      'e': { char: 'е', code: 'U+0435', name: 'Cyrillic ie' },
-      'i': { char: 'і', code: 'U+0456', name: 'Ukrainian i' },
-      'j': { char: 'ј', code: 'U+0458', name: 'Cyrillic je' },
-      'o': { char: 'о', code: 'U+043E', name: 'Cyrillic o' },
-      'p': { char: 'р', code: 'U+0440', name: 'Cyrillic er' },
-      's': { char: 'ѕ', code: 'U+0455', name: 'Cyrillic dze' },
-      'x': { char: 'х', code: 'U+0445', name: 'Cyrillic ha' },
-      'y': { char: 'у', code: 'U+0443', name: 'Cyrillic u' },
-      'A': { char: 'А', code: 'U+0410', name: 'Cyrillic A' },
-      'B': { char: 'В', code: 'U+0412', name: 'Cyrillic Ve' },
-      'C': { char: 'С', code: 'U+0421', name: 'Cyrillic Es' },
-      'E': { char: 'Е', code: 'U+0415', name: 'Cyrillic Ie' },
-      'H': { char: 'Н', code: 'U+041D', name: 'Cyrillic En' },
-      'K': { char: 'К', code: 'U+041A', name: 'Cyrillic Ka' },
-      'M': { char: 'М', code: 'U+041C', name: 'Cyrillic Em' },
-      'O': { char: 'О', code: 'U+041E', name: 'Cyrillic O' },
-      'P': { char: 'Р', code: 'U+0420', name: 'Cyrillic Er' },
-      'T': { char: 'Т', code: 'U+0422', name: 'Cyrillic Te' },
-      'X': { char: 'Х', code: 'U+0425', name: 'Cyrillic Ha' }
-    };
-
-    function mapUnicodeFont(str, lowerBase, upperBase, numBase) {
-      let res = '';
-      for (const ch of str) {
-        const c = ch.charCodeAt(0);
-        if (c >= 65 && c <= 90 && upperBase) res += String.fromCodePoint(upperBase + (c - 65));
-        else if (c >= 97 && c <= 122 && lowerBase) res += String.fromCodePoint(lowerBase + (c - 97));
-        else if (c >= 48 && c <= 57 && numBase) res += String.fromCodePoint(numBase + (c - 48));
-        else res += ch;
-      }
-      return res;
-    }
-
-    function runFontEngine() {
-      const input = document.getElementById('font-input').value;
-      const style = document.getElementById('font-style-select').value;
-      const out = document.getElementById('font-output');
-      const pill = document.getElementById('homoglyph-count-pill');
-      const panel = document.getElementById('homoglyph-codepoints-panel');
-      const badgeList = document.getElementById('homoglyph-badge-list');
-      const ratioEl = document.getElementById('diff-ratio');
-
-      saveWorkbenchState();
-      syncHighlightOverlays();
-
-      if (!input) {
-        out.innerHTML = '<span class="text-[#4d596e]">Transformed font & lookalikes will render here...</span>';
-        pill.textContent = '0 Substituted';
-        panel.classList.add('hidden');
-        return;
-      }
-
-      let transformed = '';
-      let substitutions = [];
-
-      if (style === 'homoglyph') {
-        for (const ch of input) {
-          if (HOMOGLYPH_MAP[ch]) {
-            transformed += HOMOGLYPH_MAP[ch].char;
-            substitutions.push({ orig: ch, ...HOMOGLYPH_MAP[ch] });
-          } else {
-            transformed += ch;
-          }
-        }
-        pill.textContent = `${substitutions.length} Substituted`;
-        panel.classList.toggle('hidden', substitutions.length === 0);
-        ratioEl.textContent = `${((substitutions.length / input.length) * 100).toFixed(1)}% altered`;
-
-        badgeList.innerHTML = '';
-        substitutions.slice(0, 24).forEach(sub => {
-          const badge = document.createElement('span');
-          badge.className = 'px-2 py-0.5 rounded bg-[#202735] text-amber-300 font-mono text-[10px] border border-theme-border flex items-center space-x-1';
-          badge.innerHTML = `<span class="text-slate-400">'${sub.orig}'</span> <span class="text-sky-400">➔</span> <span class="font-bold text-white">'${sub.char}'</span> <span class="text-[#7e8b9f]">(${sub.code})</span>`;
-          badgeList.appendChild(badge);
-        });
-
-      } else if (style === 'monospace') {
-        transformed = mapUnicodeFont(input, 0x1D688, 0x1D670, 0x1D7F6);
-        pill.textContent = 'Monospace';
-        panel.classList.add('hidden');
-      } else if (style === 'bold-sans') {
-        transformed = mapUnicodeFont(input, 0x1D5EE, 0x1D5D4, 0x1D7EC);
-        pill.textContent = 'Bold Sans';
-        panel.classList.add('hidden');
-      } else if (style === 'fraktur') {
-        transformed = mapUnicodeFont(input, 0x1D51E, 0x1D504, null);
-        pill.textContent = 'Fraktur';
-        panel.classList.add('hidden');
-      } else if (style === 'italic') {
-        transformed = mapUnicodeFont(input, 0x1D44E, 0x1D434, null);
-        pill.textContent = 'Italic Serif';
-        panel.classList.add('hidden');
-      } else if (style === 'fullwidth') {
-        for (const ch of input) {
-          const c = ch.charCodeAt(0);
-          transformed += (c >= 33 && c <= 126) ? String.fromCharCode(c + 0xFEE0) : (c === 32 ? '\u3000' : ch);
-        }
-        pill.textContent = 'Fullwidth';
-        panel.classList.add('hidden');
-      } else if (style === 'upsidedown') {
-        const flip = { 'a':'ɐ','b':'q','c':'ɔ','d':'p','e':'ǝ','f':'ɟ','g':'ƃ','h':'ɥ','i':'ᴉ','j':'ɾ','k':'ʞ','l':'l','m':'ɯ','n':'u','o':'o','p':'d','q':'b','r':'ɹ','s':'s','t':'ʇ','u':'n','v':'ʌ','w':'ʍ','x':'x','y':'ʎ','z':'z' };
-        transformed = input.toLowerCase().split('').reverse().map(c => flip[c] || c).join('');
-        pill.textContent = 'Inverted';
-        panel.classList.add('hidden');
-      } else if (style === 'smallcaps') {
-        const sc = { 'a':'ᴀ','b':'ʙ','c':'ᴄ','d':'ᴅ','e':'ᴇ','f':'ꜰ','g':'ɢ','h':'ʜ','i':'ɪ','j':'ᴊ','k':'ᴋ','l':'ʟ','m':'ᴍ','n':'ɴ','o':'ᴏ','p':'ᴘ','q':'ꞯ','r':'ʀ','s':'ꜱ','t':'ᴛ','u':'ᴜ','v':'ᴠ','w':'ᴡ','x':'x','y':'ʏ','z':'ᴢ' };
-        transformed = input.toLowerCase().split('').map(c => sc[c] || c).join('');
-        pill.textContent = 'Small Caps';
-        panel.classList.add('hidden');
-      }
-
-      out.textContent = transformed;
-    }
-
-    /* ==============================================================
-     * TAB 3: Crypto, Hash, & Compiler Sandbox
-     * ============================================================== */
-    function setCryptoDirection(dir) {
-      cryptoDirection = dir;
-      const enc = document.getElementById('btn-enc');
-      const dec = document.getElementById('btn-dec');
-      if (dir === 'enc') {
-        enc.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-500 text-slate-900 transition';
-        dec.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg text-theme-muted hover:text-white transition';
-      } else {
-        dec.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-500 text-slate-900 transition';
-        enc.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg text-theme-muted hover:text-white transition';
-      }
-      runCryptoEngine();
-    }
-
-    function changeCryptoEngine() {
-      const tool = document.getElementById('crypto-tool-select').value;
-      const modeSwitch = document.getElementById('crypto-mode-switch');
-      const runBtn = document.getElementById('btn-run-code');
-      const outText = document.getElementById('crypto-output');
-      const frame = document.getElementById('compiler-frame');
-
-      outText.classList.remove('hidden');
-      frame.classList.add('hidden');
-
-      if (tool === 'compiler') {
-        modeSwitch.classList.add('hidden');
-        runBtn.classList.remove('hidden');
-      } else if (tool === 'decompiler') {
-        modeSwitch.classList.add('hidden');
-        runBtn.classList.add('hidden');
-      } else {
-        modeSwitch.classList.remove('hidden');
-        runBtn.classList.add('hidden');
-      }
-      runCryptoEngine();
-    }
-
-    function loadSamplePreset(type) {
-      const input = document.getElementById('crypto-input');
-      const select = document.getElementById('crypto-tool-select');
-
-      if (type === 'js') {
-        select.value = 'compiler';
-        changeCryptoEngine();
-        input.value = `// Live JavaScript Sandbox\nfunction calculateStats(items) {\n  return items.map(x => ({ val: x, sq: x * x }));\n}\nconsole.log("Analysis Results:", calculateStats([2, 4, 8, 16]));\nreturn "Process Completed with Status 200";`;
-      } else if (type === 'html') {
-        select.value = 'compiler';
-        changeCryptoEngine();
-        input.value = `<!DOCTYPE html>\n<html>\n<body style="font-family:sans-serif; background:#0f172a; color:#f8fafc; padding:24px; border-radius:12px;">\n  <h2 style="color:#38bdf8; margin:0 0 8px;">Sandboxed HTML Engine</h2>\n  <p>Render interactive UI prototypes on the fly directly inside your workbench.</p>\n  <button onclick="this.innerText='Verified!'" style="background:#0284c7; color:#fff; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">Test Interactive Action</button>\n</body>\n</html>`;
-      } else if (type === 'b64') {
-        select.value = 'base64';
-        setCryptoDirection('enc');
-        changeCryptoEngine();
-        input.value = `{"sub": "1234567890", "name": "Security Researcher", "admin": true, "iat": 1775988000}`;
-      } else if (type === 'hex') {
-        select.value = 'decompiler';
-        changeCryptoEngine();
-        input.value = `GET /api/v1/auth HTTP/1.1\r\nHost: secure.internal\r\nAuthorization: Bearer SecKey990\r\nAccept: application/json\r\n`;
-      }
-      runCryptoEngine();
-    }
-
-    async function generateSubtleHash(algo, str) {
-      const buf = new TextEncoder().encode(str);
-      const digest = await crypto.subtle.digest(algo, buf);
-      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function runCryptoEngine() {
-      const tool = document.getElementById('crypto-tool-select').value;
-      const input = document.getElementById('crypto-input').value;
-      const output = document.getElementById('crypto-output');
-      const badge = document.getElementById('crypto-badge');
-
-      saveWorkbenchState();
-      syncHighlightOverlays();
-
-      if (!input && tool !== 'compiler') {
-        output.innerHTML = '<span class="text-[#4d596e] font-sans">Execution or transformed output will appear here...</span>';
-        badge.textContent = 'Idle';
-        badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-theme-surface text-theme-muted border border-theme-border';
-        return;
-      }
+      document.getElementById('targetText').value = 'Translating...';
 
       try {
-        let result = '';
-        if (tool === 'base64') {
-          result = cryptoDirection === 'enc' ? btoa(unescape(encodeURIComponent(input))) : decodeURIComponent(escape(atob(input)));
-        } else if (tool === 'hex') {
-          if (cryptoDirection === 'enc') {
-            result = Array.from(new TextEncoder().encode(input)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-          } else {
-            const clean = input.replace(/\s+/g, '');
-            const bytes = [];
-            for (let i = 0; i < clean.length; i += 2) bytes.push(parseInt(clean.substr(i, 2), 16));
-            result = new TextDecoder().decode(new Uint8Array(bytes));
-          }
-        } else if (tool === 'binary') {
-          if (cryptoDirection === 'enc') {
-            result = Array.from(new TextEncoder().encode(input)).map(b => b.toString(2).padStart(8, '0')).join(' ');
-          } else {
-            const clean = input.replace(/\s+/g, '');
-            const bytes = [];
-            for (let i = 0; i < clean.length; i += 8) bytes.push(parseInt(clean.substr(i, 8), 2));
-            result = new TextDecoder().decode(new Uint8Array(bytes));
-          }
-        } else if (tool === 'rot13') {
-          result = input.replace(/[a-zA-Z]/g, (c) => {
-            const b = c <= 'Z' ? 65 : 97;
-            return String.fromCharCode(b + (c.charCodeAt(0) - b + 13) % 26);
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        let translated = '';
+        if (data && data[0]) {
+          data[0].forEach(seg => {
+            if (seg[0]) translated += seg[0];
           });
-        } else if (tool === 'sha256') {
-          result = `SHA-256: ${await generateSubtleHash('SHA-256', input)}\nSHA-1:   ${await generateSubtleHash('SHA-1', input)}`;
-        } else if (tool === 'url') {
-          result = cryptoDirection === 'enc' ? encodeURIComponent(input) : decodeURIComponent(input);
-        } else if (tool === 'decompiler') {
-          let dump = 'OFFSET    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII DECODE\n';
-          dump += '--------------------------------------------------------------------\n';
-          const bytes = new TextEncoder().encode(input);
-          for (let i = 0; i < bytes.length; i += 16) {
-            let offset = i.toString(16).padStart(6, '0').toUpperCase() + '  ';
-            let hexCol = '';
-            let asciiCol = '';
-            for (let j = 0; j < 16; j++) {
-              if (i + j < bytes.length) {
-                const b = bytes[i + j];
-                hexCol += b.toString(16).padStart(2, '0').toUpperCase() + ' ';
-                asciiCol += (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.';
-              } else {
-                hexCol += '   ';
-              }
-              if (j === 7) hexCol += ' ';
-            }
-            dump += `${offset} ${hexCol} |${asciiCol}|\n`;
-          }
-          result = dump;
         }
-
-        if (tool !== 'compiler') {
-          output.textContent = result;
-          badge.textContent = '200 OK';
-          badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
-        }
+        document.getElementById('targetText').value = translated || 'Translation completed with empty output.';
       } catch (err) {
-        output.textContent = `[Processing Fault]: ${err.message}`;
-        badge.textContent = 'Error';
-        badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30';
+        document.getElementById('targetText').value = 'Translation error: check your connection.';
       }
     }
 
-    function executeCompilerCode() {
-      const code = document.getElementById('crypto-input').value;
-      const outText = document.getElementById('crypto-output');
-      const frame = document.getElementById('compiler-frame');
-      const badge = document.getElementById('crypto-badge');
+    /* SPEECH RECOGNITION (MIC) */
+    let recognition = null;
+    let isRecording = false;
 
-      if (code.trim().startsWith('<') || code.includes('<!DOCTYPE') || code.includes('<html>')) {
-        outText.classList.add('hidden');
-        frame.classList.remove('hidden');
-        frame.srcdoc = code;
-        badge.textContent = 'HTML Rendered';
-        badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/30';
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('srcText').value = transcript;
+        updateWordCount();
+        executeTranslation();
+      };
+      recognition.onend = () => {
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+      };
+      recognition.onerror = () => {
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+      };
+    }
+
+    function toggleSpeech() {
+      if (!recognition) {
+        alert('Speech recognition is not supported on this browser.');
+        return;
+      }
+      if (isRecording) {
+        recognition.stop();
+        isRecording = false;
+        document.getElementById('micBtn').classList.remove('recording');
+      } else {
+        const lang = document.getElementById('srcLang').value;
+        recognition.lang = lang === 'auto' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : lang);
+        recognition.start();
+        isRecording = true;
+        document.getElementById('micBtn').classList.add('recording');
+      }
+    }
+
+    /* TEXT TO SPEECH (VOICE OUT) */
+    function speakText(textareaId, langSelectId) {
+      const text = document.getElementById(textareaId).value;
+      if (!text || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const lang = document.getElementById(langSelectId).value;
+      utterance.lang = lang === 'auto' ? 'en-US' : (lang === 'hi' ? 'hi-IN' : lang);
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function copyResult() {
+      const text = document.getElementById('targetText').value;
+      if (text) navigator.clipboard.writeText(text);
+    }
+
+    /* GRAMMAR AUDIT & AUTOMATED CORRECTION */
+    async function openAIAssistant() {
+      const text = document.getElementById('srcText').value.trim();
+      const modal = document.getElementById('aiModal');
+      const body = document.getElementById('aiModalBody');
+      modal.classList.add('open');
+
+      if (!text) {
+        body.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Please enter some text in the translator first.</p>';
         return;
       }
 
-      outText.classList.remove('hidden');
-      frame.classList.add('hidden');
+      body.innerHTML = '<p style="color:var(--primary); font-size:13px;">Running full linguistic and grammatical check...</p>';
+
+      // Step 1: Client heuristic check (Handles standard subject-verb issues instantly)
+      let detectedIssues = [];
+      let autoCorrected = text;
+
+      const grammarRules = [
+        { regex: /\bYou is\b/gi, fix: 'You are', msg: '"You" takes the plural verb "are", not "is".' },
+        { regex: /\bHe are\b/gi, fix: 'He is', msg: '"He" takes the singular verb "is".' },
+        { regex: /\bShe are\b/gi, fix: 'She is', msg: '"She" takes the singular verb "is".' },
+        { regex: /\bThey is\b/gi, fix: 'They are', msg: '"They" takes the plural verb "are".' },
+        { regex: /\bI is\b/gi, fix: 'I am', msg: '"I" pairs with "am".' },
+        { regex: /\bis go\b/gi, fix: 'are going', msg: 'Use continuous tense "are going" or base verb "go".' },
+        { regex: /\bgo to home\b/gi, fix: 'go home', msg: 'In English, "home" functions adverbially without "to".' }
+      ];
+
+      grammarRules.forEach(rule => {
+        if (rule.regex.test(autoCorrected)) {
+          detectedIssues.push(rule.msg);
+          autoCorrected = autoCorrected.replace(rule.regex, rule.fix);
+        }
+      });
+
+      // Step 2: LanguageTool public grammar check API
+      try {
+        const response = await fetch('https://api.languagetool.org/v2/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ text: text, language: 'en-US' })
+        });
+        const data = await response.json();
+
+        if (data.matches && data.matches.length > 0) {
+          data.matches.forEach(m => {
+            detectedIssues.push(m.message);
+            if (m.replacements && m.replacements[0]) {
+              const wrongWord = text.substring(m.offset, m.offset + m.length);
+              autoCorrected = autoCorrected.replace(wrongWord, m.replacements[0].value);
+            }
+          });
+        }
+      } catch (e) {
+        // Fallback uses heuristic check if API network request is blocked
+      }
+
+      // Step 3: Render suggestions & Auto-Edit button
+      if (detectedIssues.length > 0) {
+        body.innerHTML = `
+          <div class="issue-box">
+            <strong>⚠️ Grammatical Issues Found:</strong>
+            <ul style="margin: 6px 0 0 16px; line-height: 1.5;">
+              ${detectedIssues.map(msg => `<li>${msg}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="suggestion-box">
+            <strong>💡 Suggested Correction:</strong>
+            <p style="margin-top: 4px; font-weight: 600; color: #a7f3d0;">${autoCorrected}</p>
+            <button class="fix-btn" onclick="applyCorrection('${autoCorrected.replace(/'/g, "\\'")}')">Apply Correction & Auto-Translate</button>
+          </div>
+        `;
+      } else {
+        body.innerHTML = `
+          <div class="suggestion-box" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.08);">
+            <strong style="color:var(--primary);">✓ Structure Verified</strong>
+            <p style="margin-top: 4px; font-size:13px; color:var(--text);">No grammatical or syntactic mistakes were detected in this sentence.</p>
+          </div>
+        `;
+      }
+    }
+
+    function applyCorrection(fixedText) {
+      document.getElementById('srcText').value = fixedText;
+      updateWordCount();
+      forceCloseModal();
+      executeTranslation();
+    }
+
+    function closeAIAssistant(e) {
+      if (e.target.id === 'aiModal') forceCloseModal();
+    }
+
+    function forceCloseModal() {
+      document.getElementById('aiModal').classList.remove('open');
+    }
+
+    /* TAB 2: HOMOGLYPHS & CIPHERS */
+    const homoglyphMap = {
+      'a':'а','c':'с','e':'е','i':'і','j':'ј','o':'о','p':'р','s':'ѕ','x':'х','y':'у',
+      'A':'А','B':'В','C':'С','E':'Е','H':'Н','I':'І','J':'Ј','K':'К','M':'М','O':'О','P':'Р','T':'Т','X':'Х','Y':'У'
+    };
+
+    function convertHomoglyphs() {
+      const input = document.getElementById('homoInput').value;
+      const res = input.split('').map(char => homoglyphMap[char] || char).join('');
+      document.getElementById('homoOutput').value = res;
+    }
+
+    function runCipher(type) {
+      const input = document.getElementById('homoInput').value;
+      let out = '';
+      if (type === 'rot13') {
+        out = input.replace(/[a-zA-Z]/g, function(c){
+          return String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+        });
+      } else if (type === 'base64') {
+        try { out = btoa(unescape(encodeURIComponent(input))); } catch(e) { out = 'Encoding error'; }
+      } else if (type === 'binary') {
+        out = input.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
+      }
+      document.getElementById('homoOutput').value = out;
+    }
+
+    /* TAB 3: RUNTIME JAVASCRIPT SANDBOX */
+    function runCode() {
+      const code = document.getElementById('codeEditor').value;
+      const out = document.getElementById('termOutput');
+      out.innerText = '';
 
       const logs = [];
       const originalLog = console.log;
-      console.log = function(...items) {
-        logs.push(items.map(it => typeof it === 'object' ? JSON.stringify(it, null, 2) : String(it)).join(' '));
-        originalLog.apply(console, items);
+      console.log = (...args) => {
+        logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
       };
 
       try {
         const result = new Function(code)();
-        if (result !== undefined) logs.push(`➔ Return Value: ${String(result)}`);
-        outText.textContent = logs.length ? logs.join('\n') : '[Executed without console logs or runtime exceptions]';
-        badge.textContent = 'Executed';
-        badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+        if (result !== undefined) logs.push(`=> ${result}`);
+        out.innerText = logs.length > 0 ? logs.join('\n') : '> Execution completed with no console output.';
       } catch (err) {
-        outText.textContent = `[Runtime Exception]: ${err.message}`;
-        badge.textContent = 'Exception';
-        badge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30';
+        out.innerText = `Error: ${err.message}`;
       } finally {
         console.log = originalLog;
       }
     }
-
-    /* ==============================================================
-     * In-Text Squiggly Highlight Synchronizer
-     * ============================================================== */
-    function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function syncHighlightOverlays() {
-      activeIssues = [];
-
-      // Update counters & quick clear buttons
-      const lText = document.getElementById('lang-input').value;
-      const fText = document.getElementById('font-input').value;
-      const cText = document.getElementById('crypto-input').value;
-
-      document.getElementById('lang-char-count').textContent = `${lText.length} characters`;
-      document.getElementById('lang-word-count').textContent = `${lText.trim() ? lText.trim().split(/\s+/).length : 0} words`;
-      document.getElementById('font-char-stat').textContent = `${fText.length} chars`;
-      document.getElementById('crypto-byte-stat').textContent = `${new TextEncoder().encode(cText).length} bytes`;
-
-      document.getElementById('lang-clear-btn').classList.toggle('hidden', lText.length === 0);
-      document.getElementById('font-clear-btn').classList.toggle('hidden', fText.length === 0);
-
-      // --- Tab 1 Highlight Analysis ---
-      const langBackdrop = document.getElementById('lang-input-backdrop');
-      if (!lText) {
-        langBackdrop.innerHTML = '';
-      } else {
-        let annotated = escapeHtml(lText);
-
-        // Highlight repeated words
-        const doubleWordRegex = /\b([a-zA-Z]+)\s+\1\b/gi;
-        let match;
-        while ((match = doubleWordRegex.exec(lText)) !== null) {
-          activeIssues.push({
-            type: 'Duplicate Word',
-            detail: `Repeated word "${match[1]}"`,
-            tab: 1,
-            fix: () => {
-              document.getElementById('lang-input').value = lText.replace(new RegExp(`\\b${match[1]}\\s+${match[1]}\\b`, 'i'), match[1]);
-              runLanguageTranslation();
-            }
-          });
-        }
-        annotated = annotated.replace(doubleWordRegex, '<span class="error-squiggly">$&</span>');
-
-        // Flag missing capitalization at opening
-        if (/^[a-z]/.test(lText.trim())) {
-          activeIssues.push({
-            type: 'Capitalization',
-            detail: 'Sentence begins with lowercase letter',
-            tab: 1,
-            fix: () => {
-              const tr = lText.trim();
-              document.getElementById('lang-input').value = tr.charAt(0).toUpperCase() + tr.slice(1);
-              runLanguageTranslation();
-            }
-          });
-        }
-
-        langBackdrop.innerHTML = annotated + '\n';
-      }
-
-      // --- Tab 2 Lookalike Highlight Analysis ---
-      const fontBackdrop = document.getElementById('font-input-backdrop');
-      if (!fText) {
-        fontBackdrop.innerHTML = '';
-      } else {
-        let annotatedFont = '';
-        let homoglyphFound = 0;
-        for (const char of fText) {
-          const code = char.charCodeAt(0);
-          // Lookalike non-ASCII character check
-          if (code > 127 && (code >= 0x0400 && code <= 0x052F)) {
-            annotatedFont += `<span class="error-squiggly">${escapeHtml(char)}</span>`;
-            homoglyphFound++;
-          } else {
-            annotatedFont += escapeHtml(char);
-          }
-        }
-        if (homoglyphFound > 0) {
-          activeIssues.push({
-            type: 'Spoofed Homoglyph Detected',
-            detail: `${homoglyphFound} non-ASCII lookalike character(s) detected`,
-            tab: 2,
-            fix: null
-          });
-        }
-        fontBackdrop.innerHTML = annotatedFont + '\n';
-      }
-
-      // --- Tab 3 Syntax Highlight Analysis ---
-      const cryptoBackdrop = document.getElementById('crypto-input-backdrop');
-      const tool = document.getElementById('crypto-tool-select').value;
-      if (!cText || tool !== 'compiler') {
-        cryptoBackdrop.innerHTML = '';
-      } else {
-        let annotatedCrypto = escapeHtml(cText);
-        // Bracket/parentheses mismatch check
-        const openP = (cText.match(/\(/g) || []).length;
-        const closeP = (cText.match(/\)/g) || []).length;
-        const openB = (cText.match(/\{/g) || []).length;
-        const closeB = (cText.match(/\}/g) || []).length;
-
-        if (openP !== closeP) {
-          activeIssues.push({
-            type: 'Unbalanced Parentheses ()',
-            detail: `${openP} '(' versus ${closeP} ')'`,
-            tab: 3,
-            fix: null
-          });
-          annotatedCrypto = annotatedCrypto.replace(/[\(\)]/g, '<span class="error-squiggly">$&</span>');
-        }
-        if (openB !== closeB) {
-          activeIssues.push({
-            type: 'Unbalanced Braces {}',
-            detail: `${openB} '{' versus ${closeB} '}'`,
-            tab: 3,
-            fix: null
-          });
-          annotatedCrypto = annotatedCrypto.replace(/[\{\}]/g, '<span class="error-squiggly">$&</span>');
-        }
-        cryptoBackdrop.innerHTML = annotatedCrypto + '\n';
-      }
-
-      // Update pulse counter badge on floating AI icon
-      const relevantIssues = activeIssues.filter(i => i.tab === currentTab);
-      const pulseCounter = document.getElementById('ai-pulse-counter');
-      if (relevantIssues.length > 0) {
-        pulseCounter.textContent = relevantIssues.length;
-        pulseCounter.classList.remove('hidden');
-      } else {
-        pulseCounter.classList.add('hidden');
-      }
-
-      renderAIDiagnosticsList();
-    }
-
-    // Synchronize textarea scroll position with backdrop overlay
-    ['lang-input', 'font-input', 'crypto-input'].forEach(id => {
-      const ta = document.getElementById(id);
-      const bd = document.getElementById(id + '-backdrop');
-      if (ta && bd) {
-        ta.addEventListener('scroll', () => {
-          bd.scrollTop = ta.scrollTop;
-          bd.scrollLeft = ta.scrollLeft;
-        });
-        ta.addEventListener('input', () => {
-          if (id === 'lang-input') {
-            clearTimeout(translationDebounce);
-            translationDebounce = setTimeout(runLanguageTranslation, 500);
-          } else if (id === 'font-input') {
-            runFontEngine();
-          } else if (id === 'crypto-input') {
-            runCryptoEngine();
-          }
-          syncHighlightOverlays();
-        });
-      }
-    });
-
-    /* ==============================================================
-     * AI Sparkle Diagnostics Panel & Batch Fix
-     * ============================================================== */
-    function toggleAIDiagnosticsCard(e) {
-      if (e) e.stopPropagation();
-      document.getElementById('ai-modal-card').classList.toggle('hidden');
-      renderAIDiagnosticsList();
-    }
-
-    function renderAIDiagnosticsList() {
-      const scopeEl = document.getElementById('ai-active-scope');
-      const tallyEl = document.getElementById('ai-error-tally');
-      const listEl = document.getElementById('ai-issues-list');
-      const batchBtn = document.getElementById('ai-batch-fix-btn');
-
-      scopeEl.textContent = `Active Scope: Tab ${currentTab}`;
-      const relevant = activeIssues.filter(i => i.tab === currentTab);
-      tallyEl.textContent = `${relevant.length} Flagged`;
-
-      listEl.innerHTML = '';
-      if (relevant.length === 0) {
-        listEl.innerHTML = `
-          <div class="p-3 rounded-xl bg-[#202735] border border-theme-border text-emerald-400 flex items-center space-x-2">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            <span>All checks clear. No red squiggly issues detected in active panel.</span>
-          </div>`;
-        batchBtn.classList.add('hidden');
-      } else {
-        relevant.forEach(issue => {
-          const item = document.createElement('div');
-          item.className = 'p-2.5 rounded-xl bg-[#202735] border border-theme-border text-[#cbd5e1]';
-          item.innerHTML = `<span class="font-medium text-red-400 block mb-0.5">${issue.type}</span><p class="text-[11px] text-theme-muted">${issue.detail}</p>`;
-          listEl.appendChild(item);
-        });
-
-        const fixable = relevant.filter(i => typeof i.fix === 'function');
-        batchBtn.classList.toggle('hidden', fixable.length === 0);
-      }
-    }
-
-    function executeAIBatchFix() {
-      const fixable = activeIssues.filter(i => i.tab === currentTab && typeof i.fix === 'function');
-      fixable.forEach(f => f.fix());
-      showToast('All fixable suggestions applied');
-      syncHighlightOverlays();
-    }
-
-    /* ==============================================================
-     * Freely Draggable AI Floating Widget with Smooth Edge Snapping
-     * ============================================================== */
-    const fab = document.getElementById('draggable-ai-fab');
-
-    function handleSparkleClick(e) {
-      if (hasMovedDuringDrag) {
-        hasMovedDuringDrag = false;
-        return;
-      }
-      toggleAIDiagnosticsCard(e);
-    }
-
-    function onDragStart(e) {
-      // Don't drag if clicking inside the pop-up modal
-      if (e.target.closest('#ai-modal-card')) return;
-
-      isDragging = true;
-      hasMovedDuringDrag = false;
-
-      const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-      const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-      const rect = fab.getBoundingClientRect();
-      dragStartX = clientX;
-      dragStartY = clientY;
-      initialLeft = rect.left;
-      initialTop = rect.top;
-
-      // Unset fixed bottom/right on first drag
-      fab.style.bottom = 'auto';
-      fab.style.right = 'auto';
-      fab.style.left = `${initialLeft}px`;
-      fab.style.top = `${initialTop}px`;
-
-      document.addEventListener('mousemove', onDragMove);
-      document.addEventListener('mouseup', onDragEnd);
-      document.addEventListener('touchmove', onDragMove, { passive: false });
-      document.addEventListener('touchend', onDragEnd);
-    }
-
-    function onDragMove(e) {
-      if (!isDragging) return;
-      const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-      const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-      const deltaX = clientX - dragStartX;
-      const deltaY = clientY - dragStartY;
-
-      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
-        hasMovedDuringDrag = true;
-      }
-
-      let newLeft = initialLeft + deltaX;
-      let newTop = initialTop + deltaY;
-
-      // Bound to viewport
-      const maxLeft = window.innerWidth - fab.offsetWidth - 12;
-      const maxTop = window.innerHeight - fab.offsetHeight - 12;
-
-      newLeft = Math.max(12, Math.min(newLeft, maxLeft));
-      newTop = Math.max(12, Math.min(newTop, maxTop));
-
-      fab.style.left = `${newLeft}px`;
-      fab.style.top = `${newTop}px`;
-
-      if (e.cancelable) e.preventDefault();
-    }
-
-    function onDragEnd() {
-      if (!isDragging) return;
-      isDragging = false;
-
-      document.removeEventListener('mousemove', onDragMove);
-      document.removeEventListener('mouseup', onDragEnd);
-      document.removeEventListener('touchmove', onDragMove);
-      document.removeEventListener('touchend', onDragEnd);
-
-      // Smooth Edge Snapping (snap to nearest left or right edge)
-      const currentX = parseFloat(fab.style.left);
-      const threshold = window.innerWidth / 2;
-      fab.style.transition = 'left 0.25s ease-out';
-
-      if (currentX < threshold) {
-        fab.style.left = '20px'; // snap left
-      } else {
-        fab.style.left = `${window.innerWidth - fab.offsetWidth - 20}px`; // snap right
-      }
-
-      setTimeout(() => {
-        fab.style.transition = '';
-      }, 250);
-    }
-
-    fab.addEventListener('mousedown', onDragStart);
-    fab.addEventListener('touchstart', onDragStart, { passive: true });
-
-    /* ==============================================================
-     * Initialization Lifecycle
-     * ============================================================== */
-    window.addEventListener('load', () => {
-      loadWorkbenchState();
-      runLanguageTranslation();
-      runFontEngine();
-      changeCryptoEngine();
-      syncHighlightOverlays();
-    });
   </script>
 </body>
 </html>
